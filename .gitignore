@@ -36,3 +36,6 @@ Thumbs.db
 
 # Dry-run pipeline output
 /dry_run_output.json
+
+# Timestamped run logs (scripts/run.ps1)
+/runs/
