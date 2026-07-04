@@ -63,6 +63,24 @@ CARD_SELECTOR = "a.link[href^='house/']"
 _MAX_PAGES = 25  # runaway guard; real result set is ~6 pages
 
 
+def _proxy_settings() -> dict | None:
+    """Pass the environment's HTTPS proxy to Chromium explicitly.
+
+    Unlike ``requests``, Chromium does not read ``HTTPS_PROXY`` from the
+    environment, so in proxied containers (e.g. Claude Code remote, where all
+    egress must go through an agent proxy) an unconfigured launch dials direct
+    and gets ERR_CONNECTION_RESET. Returns None when no proxy is set.
+    """
+    server = os.environ.get("HTTPS_PROXY") or os.environ.get("https_proxy")
+    if not server:
+        return None
+    proxy: dict = {"server": server}
+    bypass = os.environ.get("NO_PROXY") or os.environ.get("no_proxy")
+    if bypass:
+        proxy["bypass"] = bypass
+    return proxy
+
+
 def _chromium_executable(chromium) -> str | None:
     """Executable override for environments with a pre-installed Chromium.
 
@@ -262,7 +280,9 @@ def fetch(enrich: bool = True) -> list[Listing]:
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
-            headless=True, executable_path=_chromium_executable(p.chromium)
+            headless=True,
+            executable_path=_chromium_executable(p.chromium),
+            proxy=_proxy_settings(),
         )
         try:
             ctx = browser.new_context(user_agent=USER_AGENT, locale="zh-TW")

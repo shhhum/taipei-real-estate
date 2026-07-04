@@ -48,6 +48,11 @@ uv run python -m src.main             # live: scrape + filter + insert into Airt
   Never run `playwright install` in the remote container.
 - Knobs: `SITE_591_LIMIT` (cap 591 fetches), `YUNGCHING_NO_ENRICH=1`,
   `DRY_RUN=1` (same as `--dry-run`).
+- **Transient egress flakiness is real**: the container's egress proxy has been
+  observed to serve short windows of 503s / TLS connection resets that can fail
+  one site's scrape. The run degrades gracefully (the site is reported in
+  `ERRORS PER SITE` / the error log). If a site failed, re-running just that
+  site later usually succeeds — inserts are deduped, so partial re-runs are safe.
 
 ## Layout & contracts
 
