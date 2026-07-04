@@ -19,6 +19,8 @@ from src.filters.rules import (
     check_rule_8,
     check_rule_9,
     check_rule_10,
+    check_rule_11,
+    total_floors,
 )
 from src.models import Listing
 
@@ -32,7 +34,7 @@ def make_listing(**overrides) -> Listing:
         title="優質店面出租",
         rent_ntd=50_000,
         area_ping=50.0,
-        floor="5F/11F",
+        floor="2F/10F",
         district="大安區",
         address="台北市大安區xx路1號",
         property_type="店面",
@@ -233,6 +235,47 @@ def test_rule_10_suffix_normalization_passes():
 
 def test_rule_10_bare_stem_passes():
     assert check_rule_10(make_listing(district="信義")) is None
+
+
+# --- Rule 11: building height -------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("floor", "expected"),
+    [
+        ("2F/10F", 10),
+        ("6F/11F", 11),
+        ("5/12樓", 12),
+        ("B1~1/7F", 7),
+        ("整棟/3F", 3),
+        ("1F/5F + 地下室", 5),
+        ("4/10F\n", 10),
+        ("12F", 12),      # no total — highest floor mentioned is a lower bound
+        ("1-3F", 3),
+        ("B1", 1),
+        ("路邊/臨街門面", None),
+        ("N/A", None),
+    ],
+)
+def test_total_floors_parsing(floor, expected):
+    assert total_floors(floor) == expected
+
+
+def test_rule_11_tall_building_rejects():
+    assert check_rule_11(make_listing(floor="6F/11F")) is not None
+    assert check_rule_11(make_listing(floor="5/12樓")) is not None
+    assert check_rule_11(make_listing(floor="12F")) is not None
+
+
+def test_rule_11_at_most_10_floors_passes():
+    assert check_rule_11(make_listing(floor="2F/10F")) is None
+    assert check_rule_11(make_listing(floor="1F/7F")) is None
+    assert check_rule_11(make_listing(floor="整棟/3F")) is None
+
+
+def test_rule_11_unknown_height_passes():
+    assert check_rule_11(make_listing(floor=None)) is None
+    assert check_rule_11(make_listing(floor="路邊/臨街門面")) is None
 
 
 # --- apply() integration ----------------------------------------------------

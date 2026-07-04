@@ -11,6 +11,9 @@ four site scrapers → exclusion-rule filter → Airtable insert, deduped by lis
 The search space (7 central districts, NT$25k–100k/month, 35–70 坪, 店面/辦公) is
 fixed in `src/config.py`.
 
+The copy-pasteable prompt for the scheduled routine itself lives in
+`docs/ROUTINE.md`.
+
 ## The routine: an end-to-end run
 
 ```bash
@@ -69,7 +72,7 @@ src/main.py              # orchestrator + dry-run reporting
 src/airtable_client.py   # dedup by Link + batched insert (Status="Unseen", Date Added=Taipei today)
 src/scrapers/site_*.py   # each exposes fetch() -> list[Listing], returns UNFILTERED rows
 src/filters/rules.py     # apply(listings) -> (accepted, [(rejected, reason), ...])
-docs/RULES.md            # the 10 exclusion rules, with exact regexes
+docs/RULES.md            # the 11 exclusion rules, with exact regexes
 ```
 
 Site-specific scraping gotchas (pagination quirks, which field to trust for
