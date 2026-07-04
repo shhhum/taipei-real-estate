@@ -3,8 +3,14 @@
 Wraps `pyairtable`. Credentials come from the environment (see `.env.example`):
 `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE_ID`.
 
-Dedup key is the listing `Link` field. New rows are inserted with
-`Status="Unseen"` and `Date Added=today` in the Taipei timezone.
+Targets the real "Taipei Venue Search" base — table "Listings". Dedup key is the
+listing `Link` field. New rows are inserted with `Status="Unseen"` and
+`Date Added=today` in the Taipei timezone.
+
+The base has no dedicated columns for source / property_type / building_type /
+layout / labels, so those are folded into the `Notes` body by `format_notes()`.
+The client only writes the fields the daily search skill owns; user-curated
+fields (`Rating`, `特殊`, `Phone`, ...), formulas, and auto fields are left alone.
 """
 
 from __future__ import annotations
@@ -29,44 +35,75 @@ def _today_taipei() -> str:
     return datetime.now(TAIPEI_TZ).date().isoformat()
 
 
-def _listing_to_fields(listing: Listing) -> dict:
-    """Map a `Listing` onto Airtable field names.
+def format_notes(listing: Listing) -> str:
+    """Render the `Notes` body: a compact header block, blank line, description.
 
-    Airtable → Listing:
-      Link → link, Title → title, Rent → rent_ntd, Area (坪) → area_ping,
-      Floor → floor, District → district, Location → address,
-      Property Type → property_type, Photo → photo_url (as [{"url": ...}]),
-      Building Type → building_type, Layout → layout, Notes → description,
-      Labels → labels (comma-joined), Source → source,
-      Date Added → today (Taipei), Status → "Unseen".
+    The schema has no columns for source / property_type / building_type /
+    layout / labels, so they live here instead of being dropped. Example::
+
+        [source] 591 · [type] 店面 · [building] 電梯大樓 · [layout] OPEN
+        [labels] 近捷運, 可登記, 繁華商圈
+
+        <description, verbatim>
+
+    Header entries with a None/empty value are skipped; a listing with no header
+    values and no description yields an empty string.
     """
-    fields: dict = {
-        "Link": str(listing.link),
-        "Title": listing.title,
-        "Rent": listing.rent_ntd,
-        "Area (坪)": listing.area_ping,
-        "District": listing.district,
-        "Location": listing.address,
-        "Property Type": listing.property_type,
-        "Source": listing.source,
-        "Date Added": _today_taipei(),
-        "Status": "Unseen",
-    }
+    header_parts: list[str] = []
+    if listing.source:
+        header_parts.append(f"[source] {listing.source}")
+    if listing.property_type:
+        header_parts.append(f"[type] {listing.property_type}")
+    if listing.building_type:
+        header_parts.append(f"[building] {listing.building_type}")
+    if listing.layout:
+        header_parts.append(f"[layout] {listing.layout}")
 
-    if listing.floor is not None:
-        fields["Floor"] = listing.floor
-    if listing.building_type is not None:
-        fields["Building Type"] = listing.building_type
-    if listing.layout is not None:
-        fields["Layout"] = listing.layout
-    if listing.description is not None:
-        fields["Notes"] = listing.description
-    if listing.photo_url is not None:
-        fields["Photo"] = [{"url": str(listing.photo_url)}]
+    header_lines: list[str] = []
+    if header_parts:
+        header_lines.append(" · ".join(header_parts))
     if listing.labels:
-        fields["Labels"] = ", ".join(listing.labels)
+        header_lines.append(f"[labels] {', '.join(listing.labels)}")
 
-    return fields
+    blocks: list[str] = []
+    if header_lines:
+        blocks.append("\n".join(header_lines))
+    if listing.description:
+        blocks.append(listing.description)
+
+    return "\n\n".join(blocks)
+
+
+def _listing_to_fields(listing: Listing) -> dict:
+    """Map a `Listing` onto the real Airtable field names.
+
+    Listing → Airtable::
+
+        title       → Name
+        (literal)   → Status ("Unseen")
+        link        → Link
+        rent_ntd    → Price (月)
+        area_ping   → 坪數
+        district    → 地區 (區 suffix stripped — base's canonical form)
+        photo_url   → Photo ([{"url": ...}] or [] when absent)
+        floor       → Floor ("" when None)
+        address     → 地址
+        (today)     → Date Added (Asia/Taipei, ISO)
+        (folded)    → Notes (see `format_notes`)
+    """
+    return {
+        "Name": listing.title,
+        "Status": "Unseen",
+        "Link": str(listing.link),
+        "Price (月)": listing.rent_ntd,
+        "坪數": listing.area_ping,
+        "地區": listing.district.rstrip("區"),
+        "Photo": [{"url": str(listing.photo_url)}] if listing.photo_url else [],
+        "Floor": listing.floor or "",
+        "地址": listing.address,
+        "Date Added": _today_taipei(),
+        "Notes": format_notes(listing),
+    }
 
 
 class AirtableClient:
@@ -94,7 +131,7 @@ class AirtableClient:
         """Insert listings whose link is not already in the table.
 
         Dedups against `existing_links()`, batches inserts by `BATCH_SIZE`, and
-        returns the number of records actually inserted.
+        returns the number of records actually inserted. Idempotent on re-run.
         """
         existing = self.existing_links()
 
