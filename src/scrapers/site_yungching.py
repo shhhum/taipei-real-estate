@@ -34,9 +34,11 @@ Notes learned from inspecting the live DOM (2026-07):
 
 from __future__ import annotations
 
+import os
 import random
 import re
 import urllib.parse
+from pathlib import Path
 
 from src import config
 from src.models import Listing
@@ -59,6 +61,26 @@ USER_AGENT = (
 
 CARD_SELECTOR = "a.link[href^='house/']"
 _MAX_PAGES = 25  # runaway guard; real result set is ~6 pages
+
+
+def _chromium_executable(chromium) -> str | None:
+    """Executable override for environments with a pre-installed Chromium.
+
+    ``CHROMIUM_EXECUTABLE`` always wins. Otherwise, if the revision this
+    Playwright version expects is absent but the host ships a version-agnostic
+    binary at ``$PLAYWRIGHT_BROWSERS_PATH/chromium`` (the Claude Code remote
+    container convention), use that instead of demanding a re-download.
+    Returns None to let Playwright resolve its own default.
+    """
+    override = os.environ.get("CHROMIUM_EXECUTABLE")
+    if override:
+        return override
+    browsers_path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+    if browsers_path and not Path(chromium.executable_path).exists():
+        fallback = Path(browsers_path) / "chromium"
+        if fallback.exists():
+            return str(fallback)
+    return None
 
 
 def _search_url(page_no: int = 1) -> str:
@@ -239,7 +261,9 @@ def fetch(enrich: bool = True) -> list[Listing]:
     listings: dict[str, Listing] = {}  # listing_id -> Listing (dedup across pages)
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(
+            headless=True, executable_path=_chromium_executable(p.chromium)
+        )
         try:
             ctx = browser.new_context(user_agent=USER_AGENT, locale="zh-TW")
             page = ctx.new_page()
