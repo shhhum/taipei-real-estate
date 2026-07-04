@@ -17,7 +17,10 @@ API surprises discovered while porting (documented for the next maintainer):
   1. Commercial rentals (店面/辦公) are served by the *residential* rent-list
      endpoint `v3/web/rent/list` when `kind` is a KINDS code (5/6). The list
      item already carries `area` (坪), `price`, `photoList`, `url`, `tags`, and
-     `address`, so most of a Listing can be built without the detail page.
+     `address` — but the list `address` is TRUNCATED to the road/section
+     (`信義區-信義路六段`), silently dropping the 巷/弄 tail that filter
+     Rule 12 needs. The full address lives in the detail page's meta
+     description ("位於信義區信義路六段33巷，…") and is preferred.
   2. The residential detail endpoint (`v2/web/rent/detail`) *rejects* commercial
      listings with `{"msg":"非住宅物件","isBusiness":1}`. The structured
      用途 / 型態 fields (needed by filter Rules 1 & 7) instead live in the
@@ -176,19 +179,30 @@ class _Client591:
 def _parse_detail(html: str) -> dict:
     """Extract structured fields from a business.591 detail page.
 
-    Returns a dict with keys: purpose (用途), shape (型態), floor, description,
-    og_image, and label_blob (all 基礎資訊 label text joined, so the filter
-    module can also match against fields we don't map 1:1).
+    Returns a dict with keys: purpose (用途), shape (型態), floor, address,
+    description, og_image, and label_blob (all 基礎資訊 label text joined, so
+    the filter module can also match against fields we don't map 1:1).
     """
     soup = BeautifulSoup(html, "lxml")
     out: dict = {
         "purpose": None,
         "shape": None,
         "floor": None,
+        "address": None,
         "description": None,
         "og_image": None,
         "label_blob": None,
     }
+
+    # The list API truncates the address to the road/section (dropping 巷/弄),
+    # but the detail page's meta description carries the full one:
+    # "...位於信義區信義路六段33巷，更多辦公出租詳情...".
+    for sel in ('meta[name="description"]', 'meta[property="og:description"]'):
+        meta = soup.select_one(sel)
+        m = re.search(r"位於([^，,]+)[，,]", meta.get("content") or "") if meta else None
+        if m:
+            out["address"] = m.group(1).strip()
+            break
 
     labels: dict[str, str] = {}
     for item in soup.select("div.label-item"):
@@ -318,7 +332,7 @@ def _build_listing(item: dict, detail: dict) -> Listing | None:
             area_ping=area,
             floor=detail.get("floor"),
             district=district,
-            address=(item.get("address") or "").strip(),
+            address=(detail.get("address") or item.get("address") or "").strip(),
             property_type=property_type,
             photo_url=_pick_photo(item, detail),
             building_type=detail.get("shape"),

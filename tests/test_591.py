@@ -20,6 +20,7 @@ from src.scrapers import site_591
 _DETAIL_HTML = """
 <html><head>
 <meta property="og:image" content="https://img2.591.com.tw/house/x!730x460.water2.jpg">
+<meta name="description" content="台北市中正區店面出租：租金58,000元/月，使用坪數15坪，位於中正區和平西路一段33巷，更多店面出租詳情，就在591房屋交易網。">
 </head><body>
 <div class="info-summary"><span>15 坪 使用坪數</span><span>1F / 4F 樓層</span></div>
 <div class="label-container">
@@ -58,6 +59,8 @@ def test_parse_detail_extracts_structured_fields():
     assert detail["purpose"] == "住商用"      # 用途 -> property_type (Rule 1)
     assert detail["shape"] == "公寓"          # 型態 -> building_type (Rule 7)
     assert detail["floor"] == "1F/4F"
+    # Full address (incl. the 巷/弄 tail the list API drops) from the meta description.
+    assert detail["address"] == "中正區和平西路一段33巷"
     assert detail["og_image"].endswith(".water2.jpg")
     assert "格局方正" in detail["description"]
     assert "權狀坪數:15坪" in detail["label_blob"]
@@ -74,6 +77,7 @@ def test_build_listing_maps_all_fields():
     assert listing.area_ping == 55.0
     assert listing.floor == "1F/4F"
     assert listing.district == "中正區"
+    assert listing.address == "中正區和平西路一段33巷"   # detail beats truncated list address
     # property_type comes from 用途, building_type from 型態 — the fields the
     # filter rules (1 & 7) consume.
     assert listing.property_type == "住商用"
@@ -89,6 +93,7 @@ def test_build_listing_falls_back_to_kind_name_without_detail():
     assert listing.property_type == "店面"   # falls back to kind_name
     assert listing.building_type is None
     assert listing.photo_url is not None      # from photoList
+    assert listing.address == "中正區-和平西路一段"  # list address when no detail
 
 
 def test_parse_rent_and_area_helpers():
