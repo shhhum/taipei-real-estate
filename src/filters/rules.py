@@ -96,6 +96,10 @@ RULE10_DISTRICTS = {"中正", "大安", "大同", "萬華", "中山", "松山", 
 # "5/12樓", "B1~1/7F", "整棟/3F"); the part after the last "/" is the building's
 # total floors.
 RULE11_MAX_FLOORS = 10
+
+# Rule 12 — lane/alley addresses. 巷 (lane) / 弄 (alley) in the address means
+# the unit is off the main road — no storefront visibility.
+RULE12_ADDRESS_TERMS = ["巷", "弄"]
 _FLOOR_INT_RE = re.compile(r"\d+")
 
 
@@ -220,6 +224,13 @@ def check_rule_11(listing: Listing) -> str | None:
     return None
 
 
+def check_rule_12(listing: Listing) -> str | None:
+    for term in RULE12_ADDRESS_TERMS:
+        if term in listing.address:
+            return f"Rule 12: lane/alley address ({term})"
+    return None
+
+
 RULES = [
     check_rule_1,
     check_rule_2,
@@ -232,6 +243,7 @@ RULES = [
     check_rule_9,
     check_rule_10,
     check_rule_11,
+    check_rule_12,
 ]
 
 

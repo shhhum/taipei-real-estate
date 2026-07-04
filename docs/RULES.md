@@ -146,6 +146,18 @@ highest floor number mentioned, which is a lower bound on the building height
 all (`路邊/臨街門面`, `N/A`, empty), the rule **passes** — height unknown is
 not a reject.
 
+## Rule 12 — Lane/alley address
+
+Reject if the **address** contains either character:
+
+```
+巷   弄
+```
+
+A 巷 (lane) or 弄 (alley) address means the unit sits off the main road with
+no street visibility. This rule checks only the `address` field — 巷/弄 in a
+title or description (e.g. "巷口第一間") does not reject on its own.
+
 ---
 
 ## How to apply
