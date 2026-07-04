@@ -1,0 +1,38 @@
+[project]
+name = "taipei-real-estate"
+version = "0.1.0"
+description = "Taipei commercial-real-estate scraping + Airtable pipeline"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pydantic>=2",
+    "requests",
+    "beautifulsoup4",
+    "lxml",
+    "pyairtable",
+    "python-dotenv",
+    "playwright",
+    "tzdata",  # IANA tz database — required for zoneinfo("Asia/Taipei") on Windows
+]
+
+[project.optional-dependencies]
+# 591 sibling scraper uses the mcp-591 bridge. Kept as an optional extra so the
+# base `uv sync` stays green without it. NOTE: mcp-591 on PyPI requires Python
+# >=3.14, so it is gated behind a version marker — installing the `mcp` extra
+# (`uv sync --extra mcp`) requires a 3.14+ interpreter. See README.
+mcp = ["mcp-591; python_full_version >= '3.14'"]
+dev = ["pytest", "ruff"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
