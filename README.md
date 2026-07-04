@@ -1,4 +1,4 @@
-# taipei-real-estate
+# Taipei Real Estate Search Engine
 
 Scrapes Taipei **commercial** real-estate rental listings from four sites, filters
 them against a set of exclusion rules, and inserts the survivors into Airtable
