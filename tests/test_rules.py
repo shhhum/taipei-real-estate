@@ -20,6 +20,7 @@ from src.filters.rules import (
     check_rule_9,
     check_rule_10,
     check_rule_11,
+    check_rule_12,
     total_floors,
 )
 from src.models import Listing
@@ -276,6 +277,26 @@ def test_rule_11_at_most_10_floors_passes():
 def test_rule_11_unknown_height_passes():
     assert check_rule_11(make_listing(floor=None)) is None
     assert check_rule_11(make_listing(floor="路邊/臨街門面")) is None
+
+
+# --- Rule 12: lane/alley address ----------------------------------------------
+
+
+def test_rule_12_lane_rejects():
+    assert check_rule_12(make_listing(address="台北市大安區羅斯福路三段283巷7號")) is not None
+
+
+def test_rule_12_alley_rejects():
+    assert check_rule_12(make_listing(address="台北市中山區林森北路107巷60弄2號")) is not None
+
+
+def test_rule_12_main_road_passes():
+    assert check_rule_12(make_listing(address="台北市大安區忠孝東路四段100號")) is None
+
+
+def test_rule_12_only_checks_address():
+    # 巷/弄 in the title/description alone does not reject.
+    assert check_rule_12(make_listing(title="巷口第一間金店面", description="出弄即大馬路")) is None
 
 
 # --- apply() integration ----------------------------------------------------

@@ -127,10 +127,10 @@ src/
 
 ## Filter rules
 
-Eleven hard-reject exclusion rules (住辦 / 住宅 / bedroom-layout / industrial /
+Twelve hard-reject exclusion rules (住辦 / 住宅 / bedroom-layout / industrial /
 basement / 透天厝 / 公寓 / shared-bathroom / price-area / district /
-building-height ≤ 10F) are documented with their exact regex patterns in
-**[docs/RULES.md](docs/RULES.md)**.
+building-height ≤ 10F / lane-alley address) are documented with their exact
+regex patterns in **[docs/RULES.md](docs/RULES.md)**.
 
 ## Site-specific notes (for future maintainers)
 
