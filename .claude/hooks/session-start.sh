@@ -40,6 +40,22 @@ else:
     subprocess.run(["playwright", "install", "chromium"], check=True)
 EOF
 
+# The container's egress proxy inspects TLS ClientHellos and resets handshakes
+# it cannot parse — which includes Chromium's post-quantum (ML-KEM) and ECH
+# ClientHellos. The feature flags are gone in current Chromium, but the
+# enterprise policy still disables both. Without this, every Playwright
+# navigation dies with net::ERR_CONNECTION_RESET.
+if [ -w /etc ] || [ "$(id -u)" = "0" ]; then
+  mkdir -p /etc/chromium/policies/managed
+  cat > /etc/chromium/policies/managed/tls-compat.json <<'POLICY'
+{
+  "PostQuantumKeyAgreementEnabled": false,
+  "EncryptedClientHelloEnabled": false
+}
+POLICY
+  echo "chromium: TLS-compat policy installed (PQ/ECH disabled for proxy inspection)"
+fi
+
 # Airtable credentials come from the environment (or .env locally). Live runs
 # need them; dry runs don't. Surface early if they're missing.
 if [ -z "${AIRTABLE_TOKEN:-}" ] && [ ! -f .env ]; then

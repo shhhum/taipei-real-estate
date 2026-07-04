@@ -46,6 +46,12 @@ uv run python -m src.main             # live: scrape + filter + insert into Airt
   Playwright's own revision is missing (see `_chromium_executable` in
   `src/scrapers/site_yungching.py`); `CHROMIUM_EXECUTABLE` overrides everything.
   Never run `playwright install` in the remote container.
+- **Chromium + the egress proxy** needs two accommodations, both already
+  handled: the scraper passes `HTTPS_PROXY` to the browser explicitly (Chromium
+  ignores the env var), and the SessionStart hook installs an enterprise policy
+  disabling post-quantum key agreement + ECH, whose ClientHellos the proxy's
+  TLS inspection resets. If Playwright hits `net::ERR_CONNECTION_RESET`
+  everywhere, check `/etc/chromium/policies/managed/tls-compat.json` exists.
 - Knobs: `SITE_591_LIMIT` (cap 591 fetches), `YUNGCHING_NO_ENRICH=1`,
   `DRY_RUN=1` (same as `--dry-run`).
 - **Transient egress flakiness is real**: the container's egress proxy has been
