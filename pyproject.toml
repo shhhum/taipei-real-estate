@@ -36,3 +36,6 @@ line-length = 100
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "integration: hits a live network API; opt in with RUN_INTEGRATION=1",
+]
