@@ -24,9 +24,12 @@ uv run python -m src.main             # live: scrape + filter + insert into Airt
   run (its error is caught and reported). Treat a run where *all four* sites
   return 0 or error as a failure worth investigating; a single site erroring is
   worth reporting but the run still counts.
-- A full run takes several minutes (Yungching drives a headless browser and
-  visits each detail page; set `YUNGCHING_NO_ENRICH=1` to skip enrichment for a
-  faster smoke run).
+- A full run takes on the order of 15–40 minutes, and the first 10–20 minutes are
+  **completely silent**: the 591 scraper (which runs first) fetches each detail
+  page with a politeness sleep and prints nothing until it finishes. A quiet
+  process is not a hung process — don't kill it early; run it in the background
+  and check back. `SITE_591_LIMIT=<n>` caps 591 detail fetches and
+  `YUNGCHING_NO_ENRICH=1` skips Yungching enrichment for a faster smoke run.
 - `scripts/run.ps1` is a Windows/PowerShell launcher for local use — on Linux
   containers, invoke `uv run python -m src.main` directly.
 
