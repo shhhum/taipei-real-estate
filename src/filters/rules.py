@@ -92,10 +92,33 @@ RULE8_TERMS = ["公共衛生間", "公用廁所", "共用廁所", "公廁", "廁
 # Rule 10 — accepted districts (matched on the district stem, 區 suffix stripped).
 RULE10_DISTRICTS = {"中正", "大安", "大同", "萬華", "中山", "松山", "信義"}
 
+# Rule 11 — building height cap. Floor text is usually "unit/total" ("2F/10F",
+# "5/12樓", "B1~1/7F", "整棟/3F"); the part after the last "/" is the building's
+# total floors.
+RULE11_MAX_FLOORS = 10
+_FLOOR_INT_RE = re.compile(r"\d+")
+
 
 def _normalize_floor(floor: str) -> str:
     """Strip whitespace, uppercase, and treat 樓 as equivalent to F."""
     return floor.strip().upper().replace("樓", "F").replace(" ", "")
+
+
+def total_floors(floor: str) -> int | None:
+    """Best-effort total building floors from a floor string, or None if unknown.
+
+    With a "/" the number in the last segment is the total ("2F/10F" -> 10,
+    "1F/5F + 地下室" -> 5). Without one there is no explicit total, so fall back
+    to the highest floor number mentioned — a lower bound that still catches a
+    bare "12F" unit implying a 12F+ building ("1-3F" -> 3, "B1" -> 1).
+    """
+    norm = _normalize_floor(floor)
+    if "/" in norm:
+        tail = norm.rsplit("/", 1)[1]
+        m = _FLOOR_INT_RE.search(tail)
+        return int(m.group(0)) if m else None
+    numbers = [int(n) for n in _FLOOR_INT_RE.findall(norm)]
+    return max(numbers) if numbers else None
 
 
 # ---------------------------------------------------------------------------
@@ -188,6 +211,15 @@ def check_rule_10(listing: Listing) -> str | None:
     return None
 
 
+def check_rule_11(listing: Listing) -> str | None:
+    if not listing.floor:
+        return None
+    total = total_floors(listing.floor)
+    if total is not None and total > RULE11_MAX_FLOORS:
+        return f"Rule 11: building over {RULE11_MAX_FLOORS}F (floor={listing.floor})"
+    return None
+
+
 RULES = [
     check_rule_1,
     check_rule_2,
@@ -199,6 +231,7 @@ RULES = [
     check_rule_8,
     check_rule_9,
     check_rule_10,
+    check_rule_11,
 ]
 
 

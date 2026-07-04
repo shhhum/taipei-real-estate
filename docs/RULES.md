@@ -131,6 +131,21 @@ Only accept if `district` is one of:
 (The `district` field may carry a `區` suffix, e.g. `中正區` — match on the
 district stem.)
 
+## Rule 11 — Building height (max 10 floors)
+
+Reject if the building's **total** floor count exceeds **10**.
+
+The `floor` field is usually `unit/total` — `2F/10F`, `5/12樓`, `B1~1/7F`,
+`整棟/3F` — so the total is the number in the segment after the **last** `/`
+(`2F/10F` → 10 ✓ pass; `6F/11F` → 11 ✗ reject). Normalise before parsing:
+strip whitespace, uppercase, treat `樓` as `F`.
+
+When there is no `/total` part, there is no explicit height; fall back to the
+highest floor number mentioned, which is a lower bound on the building height
+(`12F` alone → 12 ✗ reject; `1-3F` → 3 ✓ pass). If no number can be parsed at
+all (`路邊/臨街門面`, `N/A`, empty), the rule **passes** — height unknown is
+not a reject.
+
 ---
 
 ## How to apply
