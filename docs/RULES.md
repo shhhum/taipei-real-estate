@@ -143,8 +143,16 @@ strip whitespace, uppercase, treat `樓` as `F`.
 When there is no `/total` part, there is no explicit height; fall back to the
 highest floor number mentioned, which is a lower bound on the building height
 (`12F` alone → 12 ✗ reject; `1-3F` → 3 ✓ pass). If no number can be parsed at
-all (`路邊/臨街門面`, `N/A`, empty), the rule **passes** — height unknown is
-not a reject.
+all (`路邊/臨街門面`, `N/A`, empty), the rule **fails closed** — an unverifiable
+height is a **reject**, not a pass. A blank floor is usually the symptom of a
+degraded detail-page fetch; accepting it would let tall buildings through the
+cap unchecked, so the listing is rejected rather than trusted.
+
+Upstream, the 591 scraper also pre-filters this at the API for **辦公**
+(offices): it caps the queried unit floor at the height limit (`multiFloor=1_10`),
+since a unit above the cap is necessarily in an over-cap building. Storefronts
+(**店面**) are left unfiltered — they are ground-floor with no high-floor units,
+and the numeric range would drop legitimate basement (B1) storefronts.
 
 ## Rule 12 — Lane/alley address
 

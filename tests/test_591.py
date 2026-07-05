@@ -110,6 +110,48 @@ def test_pick_layout_only_surfaces_room_counts():
     assert site_591._pick_layout({"layoutStr": "OPEN"}) == "OPEN"
 
 
+def test_looks_like_detail_rejects_stub_accepts_full_page():
+    # A ~20KB blocked stub with neither the label block nor 樓層 is degraded.
+    assert not site_591._looks_like_detail("<html><body>Too many requests</body></html>")
+    # A short body is degraded even if it happens to contain a marker.
+    assert not site_591._looks_like_detail("<div class='label-item'></div>")
+    # A full-length page with the markers is accepted.
+    full = "<div class='label-item'></div>樓層" + "x" * 40_000
+    assert site_591._looks_like_detail(full)
+
+
+class _FakeResp:
+    def __init__(self, text: str, status: int = 200) -> None:
+        self.text = text
+        self.status_code = status
+
+    def raise_for_status(self) -> None:  # 200s never raise
+        pass
+
+
+def test_get_rent_detail_retries_then_raises_on_persistent_stub(monkeypatch):
+    client = site_591._Client591()
+    calls = {"n": 0}
+
+    def fake_get(url, timeout=25):
+        calls["n"] += 1
+        return _FakeResp("stub body", status=200)  # 200 but degraded
+
+    monkeypatch.setattr(client._web, "get", fake_get)
+    monkeypatch.setattr(site_591.time, "sleep", lambda *_a, **_k: None)
+
+    with pytest.raises(site_591.requests.RequestException):
+        client.get_rent_detail_html("123", retries=2)
+    assert calls["n"] == 3  # initial attempt + 2 retries
+
+
+def test_get_rent_detail_returns_valid_page(monkeypatch):
+    client = site_591._Client591()
+    good = "<div class='label-item'></div>樓層" + "x" * 40_000
+    monkeypatch.setattr(client._web, "get", lambda url, timeout=25: _FakeResp(good))
+    assert client.get_rent_detail_html("123") == good
+
+
 @pytest.mark.integration
 @pytest.mark.skipif(
     os.environ.get("RUN_INTEGRATION") != "1",

@@ -274,9 +274,13 @@ def test_rule_11_at_most_10_floors_passes():
     assert check_rule_11(make_listing(floor="整棟/3F")) is None
 
 
-def test_rule_11_unknown_height_passes():
-    assert check_rule_11(make_listing(floor=None)) is None
-    assert check_rule_11(make_listing(floor="路邊/臨街門面")) is None
+def test_rule_11_unknown_height_rejects():
+    # Fail closed: an unverifiable height (missing or unparseable floor) must be
+    # rejected, not silently accepted — otherwise a listing whose detail fetch
+    # degraded slips past the height cap.
+    assert check_rule_11(make_listing(floor=None)) is not None
+    assert check_rule_11(make_listing(floor="")) is not None
+    assert check_rule_11(make_listing(floor="路邊/臨街門面")) is not None
 
 
 # --- Rule 12: lane/alley address ----------------------------------------------
