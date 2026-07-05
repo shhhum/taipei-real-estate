@@ -15,7 +15,7 @@ DISTRICT_ZIPS = ["100", "106", "103", "108", "104", "105", "110"]
 DISTRICT_NAMES = ["中正", "大安", "大同", "萬華", "中山", "松山", "信義"]
 
 # Rent band (monthly, NT$).
-RENT_MIN_NTD = 25_000
+RENT_MIN_NTD = 40_000
 RENT_MAX_NTD = 100_000
 
 # Area band (坪 / ping).
