@@ -10,6 +10,7 @@ when the listing passes, or a short human-readable reason string when it fails.
 
 import re
 
+from src.config import BUILDING_FLOORS_MAX
 from src.models import Listing
 
 # ---------------------------------------------------------------------------
@@ -94,8 +95,10 @@ RULE10_DISTRICTS = {"中正", "大安", "大同", "萬華", "中山", "松山", 
 
 # Rule 11 — building height cap. Floor text is usually "unit/total" ("2F/10F",
 # "5/12樓", "B1~1/7F", "整棟/3F"); the part after the last "/" is the building's
-# total floors.
-RULE11_MAX_FLOORS = 10
+# total floors. Missing/unparseable floor text fails the rule *closed* (reject):
+# a listing whose height cannot be verified — e.g. because its detail-page fetch
+# degraded — must not slip through the height cap unchecked.
+RULE11_MAX_FLOORS = BUILDING_FLOORS_MAX
 
 # Rule 12 — lane/alley addresses. 巷 (lane) / 弄 (alley) in the address means
 # the unit is off the main road — no storefront visibility.
@@ -216,10 +219,14 @@ def check_rule_10(listing: Listing) -> str | None:
 
 
 def check_rule_11(listing: Listing) -> str | None:
+    # Fail closed: an unknown or unparseable floor means the building height
+    # can't be verified, so reject rather than let it through the cap.
     if not listing.floor:
-        return None
+        return "Rule 11: floor unknown (height unverifiable)"
     total = total_floors(listing.floor)
-    if total is not None and total > RULE11_MAX_FLOORS:
+    if total is None:
+        return f"Rule 11: floor unparseable (floor={listing.floor})"
+    if total > RULE11_MAX_FLOORS:
         return f"Rule 11: building over {RULE11_MAX_FLOORS}F (floor={listing.floor})"
     return None
 

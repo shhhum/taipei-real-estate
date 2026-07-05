@@ -54,6 +54,7 @@ from urllib3.exceptions import InsecureRequestWarning
 from src.config import (
     AREA_MAX_PING,
     AREA_MIN_PING,
+    BUILDING_FLOORS_MAX,
     RENT_MAX_NTD,
     RENT_MIN_NTD,
 )
@@ -96,8 +97,30 @@ _MAX_PAGES = 200  # safety valve against pagination loops
 # Optional dev/test cap on how many detail pages to fetch (0/unset = no cap).
 _LIMIT_ENV = "SITE_591_LIMIT"
 
+# A healthy business.591 detail page is ~130KB and carries the 基礎資訊 label
+# block plus a 樓層 summary. Under load the endpoint intermittently returns a
+# ~20KB stub (a rate-limit / block page) with a 200 status and neither marker;
+# parsing it silently yields all-None fields (floor, 用途, 型態), which would let
+# an unverifiable listing through. Treat such a body as a transient failure.
+_MIN_DETAIL_HTML_LEN = 30_000
+
 # 591's TLS cert is missing a Subject Key Identifier; requests warns loudly.
 warnings.filterwarnings("ignore", category=InsecureRequestWarning)
+
+
+class _DegradedDetailError(requests.RequestException):
+    """A 200 whose body is a truncated/blocked stub rather than a real page.
+
+    Subclasses RequestException so the existing retry loop and the caller's
+    ``except requests.RequestException`` both handle it uniformly.
+    """
+
+
+def _looks_like_detail(html: str) -> bool:
+    """True if the HTML resembles a full detail page (not a blocked stub)."""
+    if len(html) < _MIN_DETAIL_HTML_LEN:
+        return False
+    return "label-item" in html or "樓層" in html
 
 
 class _Client591:
@@ -132,12 +155,14 @@ class _Client591:
         kind: int,
         first_row: int = 0,
         rentprice: str | None = None,
+        multi_floor: str | None = None,
     ) -> dict:
         """One page of the commercial rent list for a (section, kind).
 
         `kind` is a KINDS code (5=店面, 6=辦公) — despite living on the
-        residential rent-list endpoint. Returns the parsed `data` sub-object
-        (with `items` and `total`).
+        residential rent-list endpoint. `multi_floor` is 591's unit-floor range
+        filter ("min_max", e.g. "1_10") applied at the API. Returns the parsed
+        `data` sub-object (with `items` and `total`).
         """
         params: dict = {
             "regionid": REGION_ID,
@@ -148,17 +173,20 @@ class _Client591:
         }
         if rentprice is not None:
             params["rentprice"] = rentprice
+        if multi_floor is not None:
+            params["multiFloor"] = multi_floor
         resp = self._api.get(_RENT_LIST_URL, params=params, timeout=25)
         resp.raise_for_status()
         return resp.json().get("data", {}) or {}
 
-    def get_rent_detail_html(self, post_id: str | int, *, retries: int = 1) -> str:
+    def get_rent_detail_html(self, post_id: str | int, *, retries: int = 2) -> str:
         """Fetch the business detail page HTML for a commercial listing.
 
         The JSON detail endpoint rejects commercial listings ("非住宅物件"), so
-        the structured 用途 / 型態 fields are read from this HTML instead. A
-        transient failure here would silently drop those fields (leaving the
-        filter rules unable to inspect 型態/用途), so retry once on error.
+        the structured 用途 / 型態 / 樓層 fields are read from this HTML instead.
+        A transient failure — a network error *or* a 200 stub (see
+        ``_looks_like_detail``) — would silently drop those fields and let an
+        unverifiable listing through, so retry on both before giving up.
         """
         url = _BUSINESS_DETAIL_URL.format(id=post_id)
         last_exc: Exception | None = None
@@ -166,6 +194,11 @@ class _Client591:
             try:
                 resp = self._web.get(url, timeout=25)
                 resp.raise_for_status()
+                if not _looks_like_detail(resp.text):
+                    raise _DegradedDetailError(
+                        f"degraded detail page for {post_id} "
+                        f"(status={resp.status_code}, len={len(resp.text)})"
+                    )
                 return resp.text
             except requests.RequestException as exc:
                 last_exc = exc
@@ -359,6 +392,12 @@ def _collect_candidates(client: _Client591) -> list[dict]:
     candidates: list[dict] = []
 
     for kind in KINDS:
+        # Pre-filter high-floor units at the API for 辦公 (offices): a unit above
+        # the height cap is necessarily in an over-cap building, so it is a
+        # guaranteed Rule 11 reject. NOT applied to 店面 (storefronts): they are
+        # ground-floor with effectively no high-floor units, and the numeric
+        # range would instead drop legitimate basement (B1) storefronts.
+        multi_floor = f"1_{BUILDING_FLOORS_MAX}" if KINDS[kind] == "辦公" else None
         for name, section_id in TAIPEI_SECTIONS.items():
             first_row = 0
             for _ in range(_MAX_PAGES):
@@ -368,6 +407,7 @@ def _collect_candidates(client: _Client591) -> list[dict]:
                         kind=kind,
                         first_row=first_row,
                         rentprice=rentprice,
+                        multi_floor=multi_floor,
                     )
                 except requests.RequestException as exc:
                     logger.warning(
