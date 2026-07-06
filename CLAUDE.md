@@ -72,7 +72,7 @@ src/main.py              # orchestrator + dry-run reporting
 src/airtable_client.py   # dedup by Link + batched insert (Status="Unseen", Date Added=Taipei today)
 src/scrapers/site_*.py   # each exposes fetch() -> list[Listing], returns UNFILTERED rows
 src/filters/rules.py     # apply(listings) -> (accepted, [(rejected, reason), ...])
-docs/RULES.md            # the 12 exclusion rules, with exact regexes
+docs/RULES.md            # the 11 exclusion rules, with exact regexes
 ```
 
 Site-specific scraping gotchas (pagination quirks, which field to trust for

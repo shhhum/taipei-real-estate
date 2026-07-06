@@ -78,13 +78,12 @@ Hybrid floors **pass**:
 `防空避難室` (air-raid shelter) anywhere in the description is a **hard reject**
 regardless of the floor field.
 
-## Rule 6 — 透天厝
+## Rule 6 — 透天厝 *(removed)*
 
-Reject if `building_type` or `description` contains:
-
-```
-透天厝
-```
+Formerly rejected 透天厝 (townhouse) listings. Removed — townhouses are now
+**allowed**: a 透天厝 is frequently rented as a ground-floor storefront, which is
+exactly what this search wants. The remaining rules keep their original numbers
+(there is no Rule 6) so their reason strings stay stable.
 
 ## Rule 7 — 公寓 (walk-up apartment)
 

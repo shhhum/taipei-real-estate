@@ -111,7 +111,7 @@ src/
 │   ├── site_hbhousing.py    # 住商不動產    (Nuxt SSR, /{N}-page pagination)
 │   └── site_yungching.py    # 永慶房屋      (Playwright/Chromium)
 └── filters/
-    └── rules.py         # 10 exclusion rules — see docs/RULES.md
+    └── rules.py         # 11 exclusion rules — see docs/RULES.md
 ```
 
 **Contracts:**
@@ -127,10 +127,11 @@ src/
 
 ## Filter rules
 
-Twelve hard-reject exclusion rules (住辦 / 住宅 / bedroom-layout / industrial /
-basement / 透天厝 / 公寓 / shared-bathroom / price-area / district /
+Eleven hard-reject exclusion rules (住辦 / 住宅 / bedroom-layout / industrial /
+basement / 公寓 / shared-bathroom / price-area / district /
 building-height ≤ 10F / lane-alley address) are documented with their exact
-regex patterns in **[docs/RULES.md](docs/RULES.md)**.
+regex patterns in **[docs/RULES.md](docs/RULES.md)**. (Rule 6, which rejected
+透天厝 townhouses, has been removed — the numbering skips 6.)
 
 ## Site-specific notes (for future maintainers)
 

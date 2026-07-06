@@ -33,7 +33,7 @@ API surprises discovered while porting (documented for the next maintainer):
 
 `fetch()` returns Listings narrowed to the configured *search space* (district /
 kind / rent / area) but NOT run through the content-exclusion rules — those
-(住辦, 住宅, 公寓, 透天厝, …) are the filter module's job (`src.filters.rules`).
+(住辦, 住宅, 公寓, …) are the filter module's job (`src.filters.rules`).
 """
 
 from __future__ import annotations

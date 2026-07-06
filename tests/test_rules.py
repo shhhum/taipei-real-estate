@@ -14,7 +14,6 @@ from src.filters.rules import (
     check_rule_3,
     check_rule_4,
     check_rule_5,
-    check_rule_6,
     check_rule_7,
     check_rule_8,
     check_rule_9,
@@ -145,19 +144,14 @@ def test_rule_5_normalizes_whitespace_and_case():
     assert check_rule_5(make_listing(floor=" b1 ")) is not None
 
 
-# --- Rule 6: 透天厝 ---------------------------------------------------------
+# --- Rule 6 removed: 透天厝 (townhouse) is now allowed ----------------------
 
 
-def test_rule_6_building_type_rejects():
-    assert check_rule_6(make_listing(building_type="透天厝")) is not None
-
-
-def test_rule_6_corpus_rejects():
-    assert check_rule_6(make_listing(description="整棟透天厝")) is not None
-
-
-def test_rule_6_passes():
-    assert check_rule_6(make_listing()) is None
+def test_townhouse_is_accepted():
+    """透天厝 used to be a hard reject (Rule 6); it must now pass the filter."""
+    accepted, rejected = apply([make_listing(building_type="透天厝")])
+    assert len(accepted) == 1
+    assert rejected == []
 
 
 # --- Rule 7: 公寓 walk-up ---------------------------------------------------

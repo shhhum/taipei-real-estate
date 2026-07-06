@@ -78,9 +78,6 @@ _RULE5_SHELTER = "防空避難室"
 # 樓 treated as F).
 _RULE5_PURE_BASEMENT = {"B1", "B1F"}
 
-# Rule 6 — 透天厝 (townhouse).
-_RULE6_TERM = "透天厝"
-
 # Rule 7 — 公寓 walk-up. Bare "公寓" in prose is NOT enough (電梯大樓 listings
 # mention it in comparisons); require the exact building_type or a stronger cue.
 RULE7_PATTERNS = [r"老公寓", r"公寓住宅", r"\d+樓公寓"]
@@ -177,14 +174,6 @@ def check_rule_5(listing: Listing) -> str | None:
     return None
 
 
-def check_rule_6(listing: Listing) -> str | None:
-    if listing.building_type and _RULE6_TERM in listing.building_type:
-        return "Rule 6: 透天厝 (building_type)"
-    if _RULE6_TERM in _corpus(listing):
-        return "Rule 6: 透天厝"
-    return None
-
-
 def check_rule_7(listing: Listing) -> str | None:
     if listing.building_type == "公寓":
         return "Rule 7: 公寓 walk-up (building_type)"
@@ -244,7 +233,6 @@ RULES = [
     check_rule_3,
     check_rule_4,
     check_rule_5,
-    check_rule_6,
     check_rule_7,
     check_rule_8,
     check_rule_9,
