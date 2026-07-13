@@ -15,7 +15,7 @@ Then run this module directly to smoke-test::
 Search space comes from ``src.config`` (rent band, area band, districts). The
 site URL encodes city / price / use / building-type / area as path segments::
 
-    /list/台北市-_c/25000-100000_price/店面,辦公_use/電梯大廈_type/35-70_pin
+    /list/台北市-_c/25000-150000_price/店面,辦公_use/電梯大廈_type/35-70_pin
 
 Notes learned from inspecting the live DOM (2026-07):
 

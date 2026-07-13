@@ -204,7 +204,7 @@ def check_rule_8(listing: Listing) -> str | None:
 
 
 def check_rule_9(listing: Listing) -> str | None:
-    if listing.rent_ntd < 25_000 or listing.rent_ntd > 100_000:
+    if listing.rent_ntd < 25_000 or listing.rent_ntd > 150_000:
         return f"Rule 9: rent out of band ({listing.rent_ntd})"
     if listing.area_ping < 35 or listing.area_ping > 70:
         return f"Rule 9: area out of band ({listing.area_ping})"

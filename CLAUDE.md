@@ -8,7 +8,7 @@ same ground in more depth for humans.
 
 A daily search pipeline for Taipei **commercial** rental listings (storefront/office):
 four site scrapers → exclusion-rule filter → Airtable insert, deduped by listing URL.
-The search space (7 central districts, NT$25k–100k/month, 35–70 坪, 店面/辦公) is
+The search space (7 central districts, NT$25k–150k/month, 35–70 坪, 店面/辦公) is
 fixed in `src/config.py`.
 
 The copy-pasteable prompt for the scheduled routine itself lives in

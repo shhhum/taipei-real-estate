@@ -206,7 +206,7 @@ def test_rule_9_rent_below_band_rejects():
 
 
 def test_rule_9_rent_above_band_rejects():
-    assert check_rule_9(make_listing(rent_ntd=100_001)) is not None
+    assert check_rule_9(make_listing(rent_ntd=150_001)) is not None
 
 
 def test_rule_9_area_above_band_rejects():
@@ -219,7 +219,7 @@ def test_rule_9_area_below_band_rejects():
 
 def test_rule_9_band_edges_pass():
     assert check_rule_9(make_listing(rent_ntd=25_000, area_ping=35.0)) is None
-    assert check_rule_9(make_listing(rent_ntd=100_000, area_ping=70.0)) is None
+    assert check_rule_9(make_listing(rent_ntd=150_000, area_ping=70.0)) is None
 
 
 # --- Rule 10: districts -----------------------------------------------------

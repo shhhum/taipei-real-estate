@@ -115,7 +115,7 @@ shared-bathroom signal appear, still **REJECT**.
 
 Reject if:
 
-- `rent_ntd` not in `[25000, 100000]`, **or**
+- `rent_ntd` not in `[25000, 150000]`, **or**
 - `area_ping` not in `[35, 70]`.
 
 Apply this **after** the site-level filters (post-filter).

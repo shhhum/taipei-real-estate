@@ -6,7 +6,7 @@ them against a set of exclusion rules, and inserts the survivors into Airtable
 
 The target search space is fixed in [`src/config.py`](src/config.py): seven central
 Taipei districts (中正 / 大安 / 大同 / 萬華 / 中山 / 松山 / 信義), monthly rent
-NT$25,000–100,000, area 35–70 坪, property types 店面 (storefront) and 辦公 (office).
+NT$25,000–150,000, area 35–70 坪, property types 店面 (storefront) and 辦公 (office).
 
 > **This scraper is for personal use only.** It hits each site's public pages at a
 > modest rate to build a private shortlist. Please respect each site's terms of
